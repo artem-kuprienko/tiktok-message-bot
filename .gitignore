@@ -1,2 +1,4 @@
 venv/
 session_data/
+timer.txt
+error_log.txt
