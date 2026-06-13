@@ -3,35 +3,42 @@ import random
 import datetime
 import time
 
-
+def note_error(exception):
+    with open("error_log.txt", "a") as file:
+        file.write(f"{datetime.datetime.now()}: {exception}\n")
 
 def main(playwright):
+    try:
+        while True:
+            if datetime.datetime.now().hour > 8: 
+                current_time = datetime.datetime.now().strftime("%d-%m-%Y")
+                with open("timer.txt", "a+") as file:
+                    file.seek(0)
 
-    while True:
-        if datetime.datetime.now().hour > 8: 
-            current_time = datetime.datetime.now().strftime("%d-%m-%Y")
-            with open("timer.txt", "a+") as file:
-                file.seek(0)
+                    if current_time not in file.read():
+                        print("Not sent today, sending now...")
 
-                if current_time not in file.read():
-                    print("Not sent today, sending now...")
+                        result = run_browser(playwright)
 
-                    result = run_browser(playwright)
+                        if result is True:
+                            print("Sent successfull")
 
-                    if result is True:
-                        print("Sent successfull")
-
-                        file.write(current_time)
-                        print("Date added successfully")
-                                
-                    elif result is None:
-                        print("Failed to launch browser")
+                            file.write(current_time + "\n")
+                            print("Date added successfully")
+                                    
+                        elif result is None:
+                            print("Failed to launch browser")
+                            note_error("Failed to launch browser")
+                        else:
+                            print("Sent failed")
+                            note_error("Sent failed")
                     else:
-                        print("Sent failed")
-                else:
-                    print("Already sent today")
+                        print("Already sent today")
 
-        time.sleep(600)
+            time.sleep(600)
+    except Exception as exception:
+        print(f"Error while timer function: {exception}")
+        note_error(f"Error while timer function: {exception}")
 
 def run_browser(playwright):
     try:   
@@ -51,10 +58,12 @@ def run_browser(playwright):
             return True
         except Exception as exception:
             print(f"Error during navigation: {exception}")
+            note_error(f"Error during navigation: {exception}")
             return False
     
     except Exception as exception:
         print(f"Error while launching browser: {exception}")
+        note_error(f"Error while launching browser: {exception}")
         return None
 
 
