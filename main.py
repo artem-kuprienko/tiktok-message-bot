@@ -1,18 +1,39 @@
 from playwright.sync_api import sync_playwright
 import random
+import datetime
+import time
+
+
 
 def main(playwright):
-    page = run(playwright)
 
-    if page:
-        if navigation(page):
-            print("Sent successful")
-        else:
-            print("Sent failed")
-    else:
-        print("Failed to launch browser")
+    while True:
+        if datetime.datetime.now().hour > 8: 
+            current_time = datetime.datetime.now().strftime("%d-%m-%Y")
+            with open("timer.txt", "a+") as file:
+                file.seek(0)
 
-def run(playwright):
+                if current_time not in file.read():
+                    print("Not sent today, sending now...")
+
+                    result = run_browser(playwright)
+
+                    if result is True:
+                        print("Sent successfull")
+
+                        file.write(current_time)
+                        print("Date added successfully")
+                                
+                    elif result is None:
+                        print("Failed to launch browser")
+                    else:
+                        print("Sent failed")
+                else:
+                    print("Already sent today")
+
+        time.sleep(600)
+
+def run_browser(playwright):
     try:   
         context = playwright.chromium.launch_persistent_context(
         "session_data",
@@ -21,21 +42,20 @@ def run(playwright):
     )
         page = context.pages[0]
         page.goto("https://www.tiktok.com/messages?lang=uk-UA")
-        return page
+        
+        try:
+            page.get_by_role("paragraph").filter(has_text="Mavrodi").click()
+            page.locator(".public-DraftStyleDefault-block").fill(random.choice(["🔥", "😀", "👍"]))
+            page.get_by_role("button", name="Відправити").click()
+            page.wait_for_timeout(2000)
+            return True
+        except Exception as exception:
+            print(f"Error during navigation: {exception}")
+            return False
+    
     except Exception as exception:
         print(f"Error while launching browser: {exception}")
         return None
-    
-def navigation(page):
-    try:
-        page.get_by_role("paragraph").filter(has_text="Mavrodi").click()
-        page.locator(".public-DraftStyleDefault-block").fill(random.choice(["🔥", "😀", "👍"]))
-        page.get_by_role("button", name="Відправити").click()
-        return True
-    except Exception as exception:
-        print(f"Error during navigation: {exception}")
-        return False
-    
 
 
 
