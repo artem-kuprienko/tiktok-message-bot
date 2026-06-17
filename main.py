@@ -35,7 +35,7 @@ def main(playwright):
                     else:
                         print("Already sent today")
 
-            time.sleep(600)
+            time.sleep(600) # 10 минут каждая проверка
     except Exception as exception:
         print(f"Error while timer function: {exception}")
         note_error(f"Error while timer function: {exception}")
@@ -43,14 +43,16 @@ def main(playwright):
 
 def run_browser(playwright):
 
+    Headless = True  # Видимость браузера, при входе в аккаунт TikTok,  поставьте False и войдите в аккаунт, чтобы сохранить сессию. После этого можно ставить True и бот будет работать в фоне.
     friend_tiktok_name = "Mavrodi"  # Замените на имя пользователя вашего друга в TikTok (То как он у вас подписан в сообщениях)
     
     context = None
-
     try:   
         context = playwright.chromium.launch_persistent_context(
         "session_data_tiktok",
-        headless=True,
+        headless=Headless,
+        locale="uk-UA",
+        timezone_id="Europe/Kiev",
         args=["--disable-blink-features=AutomationControlled"],
     )
         page = context.pages[0]
