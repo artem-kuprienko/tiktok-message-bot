@@ -8,7 +8,6 @@ Automated TikTok message sending on schedule. Bot launches browser, finds the co
 - Random message selection from list
 - Automatic retry on failures
 - Error logging
-- Ukrainian localization support
 
 ## Requirements
 
