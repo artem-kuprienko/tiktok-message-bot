@@ -42,20 +42,23 @@ def main(playwright):
     
 
 def run_browser(playwright):
+
+    friend_tiktok_name = "Mavrodi"  # Замените на имя пользователя вашего друга в TikTok (То как он у вас подписан в сообщениях)
+    
     context = None
 
     try:   
         context = playwright.chromium.launch_persistent_context(
         "session_data_titok",
         headless=True,
-        args=["--disable-blink-features=AutomationControlled"],  # Прячет navigator.webdriver
+        args=["--disable-blink-features=AutomationControlled"],
     )
         page = context.pages[0]
         page.goto("https://www.tiktok.com/messages?lang=uk-UA")
         
         try:
-            page.get_by_role("paragraph").filter(has_text="Mavrodi").click()
-            page.locator(".public-DraftStyleDefault-block").fill(f"NAPOLEONATOR: {random.choice(['🔥', '😀', '👍'])}")
+            page.get_by_role("paragraph").filter(has_text=friend_tiktok_name).click() 
+            page.locator(".public-DraftStyleDefault-block").fill(f"{random.choice(['🔥', '😀', '👍'])}") # Можно поменять сообщение тут. пока используються 1 рандомный емодзи из 3
             page.get_by_role("button", name="Відправити").click()
             page.wait_for_timeout(1000)
             return True

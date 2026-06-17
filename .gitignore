@@ -1,4 +1,6 @@
 venv/
 session_data_tiktok/
-timer.txt
 error_log.txt
+timer.txt
+__pycache__/
+*.pyc

@@ -1,1 +1,6 @@
 .dockerignore
+session_data_tiktok/
+error_log.txt
+timer.txt
+__pycache__/
+*.pyc
