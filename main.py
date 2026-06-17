@@ -1,11 +1,16 @@
 from playwright.sync_api import sync_playwright
+from dotenv import load_dotenv
 import random
 import datetime
 import time
+import os
+import sys
+
 
 def note_error(exception):
     with open("error_log.txt", "a", encoding="utf-8") as file:
         file.write(f"{datetime.datetime.now()}: {exception}\n")
+
 
 def main(playwright):
     try:
@@ -35,7 +40,8 @@ def main(playwright):
                     else:
                         print("Already sent today")
 
-            time.sleep(600) # 10 минут каждая проверка
+            CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL_SEC", "600")) # set in .env, 10m default
+            time.sleep(CHECK_INTERVAL)
     except Exception as exception:
         print(f"Error while timer function: {exception}")
         note_error(f"Error while timer function: {exception}")
@@ -43,30 +49,48 @@ def main(playwright):
 
 def run_browser(playwright):
 
-    Headless = True  # Видимость браузера, при входе в аккаунт TikTok,  поставьте False и войдите в аккаунт, чтобы сохранить сессию. После этого можно ставить True и бот будет работать в фоне.
-    friend_tiktok_name = "Mavrodi"  # Замените на имя пользователя вашего друга в TikTok (То как он у вас подписан в сообщениях)
+    HEADLESS = os.getenv("HEADLESS", "false").lower() == "true"
+    print(f"Headless mode: {HEADLESS}")
     
+    FRIEND_NAME = os.getenv("FRIEND_NAME")
+    if not FRIEND_NAME:
+        sys.exit("Error: FRIEND_NAME not set in .env file")
+
+    messages_str = os.getenv("MESSAGES")
+    if not messages_str:
+        sys.exit("Error: MESSAGES not set in .env file")
+    
+    messages = messages_str.split("|")
+    MESSAGE = random.choice(messages)
+    print(f"Selected message: {MESSAGE}")
+
     context = None
     try:   
         context = playwright.chromium.launch_persistent_context(
         "session_data_tiktok",
-        headless=Headless,
+        headless=HEADLESS,
         locale="uk-UA",
         timezone_id="Europe/Kiev",
         args=["--disable-blink-features=AutomationControlled"],
     )
         page = context.pages[0]
         page.goto("https://www.tiktok.com/messages?lang=uk-UA")
+        page.wait_for_load_state("networkidle")
         
         try:
-            page.get_by_role("paragraph").filter(has_text=friend_tiktok_name).click() 
-            page.locator(".public-DraftStyleDefault-block").fill(f"{random.choice(['🔥', '😀', '👍'])}") # Можно поменять сообщение тут. пока используються 1 рандомный емодзи из 3
+            # Клик по нужному контакту
+            page.locator(f'[data-e2e="dm-new-conversation-nickname"]:has-text("{FRIEND_NAME}")').click()
+            
+            # Жди поле ввода
+            page.wait_for_selector(".public-DraftStyleDefault-block", timeout=5000)
+            
+            # Заполни и отправь
+            page.locator(".public-DraftStyleDefault-block").fill(MESSAGE)
             page.get_by_role("button", name="Відправити").click()
             page.wait_for_timeout(1000)
             return True
-        except Exception as exception:
-            print(f"Error during navigation: {exception}")
-            note_error(f"Error during navigation: {exception}")
+        except Exception as e:
+            note_error(f"Error during send: {e}")
             return False
     
     except Exception as exception:
@@ -80,5 +104,7 @@ def run_browser(playwright):
 
 
 if __name__ == "__main__":
+
+    load_dotenv()
     with sync_playwright() as playwright:
         main(playwright)
