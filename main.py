@@ -4,7 +4,6 @@ import random
 import datetime
 import time
 import os
-import sys
 
 
 def note_error(exception):
@@ -13,35 +12,40 @@ def note_error(exception):
 
 
 def main(playwright):
+    
+    CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL_SEC", "600"))
+    SEND_TIME_HOUR = int(os.getenv("SEND_TIME_HOUR", "8"))
+    
     try:
         while True:
-            if datetime.datetime.now().hour > 7: 
-                current_time = datetime.datetime.now().strftime("%d-%m-%Y")
+            now = datetime.datetime.now()
+            current_date = now.strftime("%d-%m-%Y")
+            
+            # Проверь: уже ли нужное время И еще не отправлено сегодня
+            if now.hour >= SEND_TIME_HOUR:
                 with open("timer.txt", "a+", encoding="utf-8") as file:
                     file.seek(0)
-
-                    if current_time not in file.read():
-                        print("Not sent today, sending now...")
-
+                    
+                    if current_date not in file.read():
+                        print(f"Time is {now.hour}:{now.minute:02d}, sending now...")
                         result = run_browser(playwright)
-
+                        
                         if result is True:
-                            print("Sent successfull")
-
-                            file.write(current_time + "\n")
-                            print("Date added successfully")
-                                    
+                            print("Sent successfully")
+                            file.write(current_date + "\n")
                         elif result is None:
                             print("Failed to launch browser")
                             note_error("Failed to launch browser")
-                        else:
+                        else: # False
                             print("Sent failed")
                             note_error("Sent failed")
                     else:
-                        print("Already sent today")
-
-            CHECK_INTERVAL = int(os.getenv("CHECK_INTERVAL_SEC", "600")) # set in .env, 10m default
+                        print(f"Already sent today")
+            else:
+                print(f"Not yet time. Current: {now.hour}:{now.minute:02d}, Target: {SEND_TIME_HOUR}:00")
+            
             time.sleep(CHECK_INTERVAL)
+
     except Exception as exception:
         print(f"Error while timer function: {exception}")
         note_error(f"Error while timer function: {exception}")
@@ -49,30 +53,34 @@ def main(playwright):
 
 def run_browser(playwright):
 
-    HEADLESS = os.getenv("HEADLESS", "false").lower() == "true"
+    HEADLESS = os.getenv("HEADLESS", "false").lower() == "true" # set in .env
     print(f"Headless mode: {HEADLESS}")
     
-    FRIEND_NAME = os.getenv("FRIEND_NAME")
+    FRIEND_NAME = os.getenv("FRIEND_NAME") # set in .env
     if not FRIEND_NAME:
-        sys.exit("Error: FRIEND_NAME not set in .env file")
+        print("Error: FRIEND_NAME not set in .env file")
+        note_error("FRIEND_NAME not set in .env file")
+        return None
 
     messages_str = os.getenv("MESSAGES")
     if not messages_str:
-        sys.exit("Error: MESSAGES not set in .env file")
+        print("Error: MESSAGES not set in .env file")
+        note_error("MESSAGES not set in .env file")
+        return None
     
     messages = messages_str.split("|")
-    MESSAGE = random.choice(messages)
+    MESSAGE = random.choice(messages) # set in .env (possible one or multi/random message, to make random text use |, text1|text2)
     print(f"Selected message: {MESSAGE}")
 
     context = None
     try:   
         context = playwright.chromium.launch_persistent_context(
-        "session_data_tiktok",
-        headless=HEADLESS,
-        locale="uk-UA",
-        timezone_id="Europe/Kiev",
-        args=["--disable-blink-features=AutomationControlled"],
-    )
+            "session_data_tiktok",
+            headless=HEADLESS,
+            locale="uk-UA", # browser language
+            timezone_id="Europe/Kiev", #browser timezone
+            args=["--disable-blink-features=AutomationControlled"], # arg disables webDriver, without impossible to start tiktok
+        )
         page = context.pages[0]
         page.goto("https://www.tiktok.com/messages?lang=uk-UA")
         page.wait_for_load_state("networkidle")
