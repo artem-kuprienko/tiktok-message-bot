@@ -49,7 +49,7 @@ def run_browser(playwright):
 
     try:   
         context = playwright.chromium.launch_persistent_context(
-        "session_data_titok",
+        "session_data_tiktok",
         headless=True,
         args=["--disable-blink-features=AutomationControlled"],
     )
